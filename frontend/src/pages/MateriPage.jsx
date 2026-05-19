@@ -1,6 +1,15 @@
 import { useMemo } from 'react';
-import { AlertTriangle, ShieldCheck, Stethoscope, Thermometer, Wind, HeartPulse, ShieldAlert } from 'lucide-react';
-import { materiStatis } from '../data/staticContent';
+import {
+  AlertTriangle,
+  Hand,
+  ShieldCheck,
+  Stethoscope,
+  Thermometer,
+  Wind,
+  HeartPulse,
+  ShieldAlert,
+} from 'lucide-react';
+import { materiSectionOrder, materiStatis } from '../data/staticContent';
 import pengertianImage from '../assets/ispa/pengertian.png';
 import penyebabImage from '../assets/ispa/penyebab.png';
 import faktorRisikoImage from '../assets/ispa/faktor_risiko.png';
@@ -70,23 +79,82 @@ const kategoriConfig = {
     accent: 'bg-green-50 text-green-700',
     placeholder: 'Placeholder Gambar Pencegahan',
     image: pencegahanImage,
-    images: [pencegahanCuciTanganImage, pencegahanEtikaBatukImage],
+  },
+  cuci_tangan: {
+    label: 'Cuci Tangan 6 Benar',
+    icon: Hand,
+    accent: 'bg-sky-50 text-sky-700',
+    placeholder: 'Placeholder Gambar Cuci Tangan',
+    image: pencegahanCuciTanganImage,
+  },
+  etika_batuk: {
+    label: 'Etika Batuk',
+    icon: Wind,
+    accent: 'bg-violet-50 text-violet-700',
+    placeholder: 'Placeholder Gambar Etika Batuk',
+    image: pencegahanEtikaBatukImage,
   },
 };
 
-function ImageBlock({ title, src, images = [] }) {
-  if (images.length > 0) {
-    return (
-      <div className="grid grid-cols-2 gap-3">
-        {images.map((img, idx) => (
-          <div key={`${title}-${idx}`} className="overflow-hidden rounded-2xl bg-white p-2 shadow-sm">
-            <img src={img} alt={`${title} ${idx + 1}`} className="h-auto w-full object-contain" />
-          </div>
-        ))}
-      </div>
-    );
-  }
+function SumberBlock({ sumber = [] }) {
+  if (!sumber.length) return null;
 
+  return (
+    <div className="mt-4 border-t border-slate-100 pt-3">
+      <p className="text-sm font-semibold text-slate-700">Sumber:</p>
+      <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600">
+        {sumber.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function NumberedList({ items = [] }) {
+  if (!items.length) return null;
+
+  return (
+    <ol className="mt-3 list-decimal space-y-2 pl-5 text-base leading-relaxed text-slate-600">
+      {items.map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ol>
+  );
+}
+
+function MateriArticle({ item }) {
+  return (
+    <article className="rounded-2xl bg-white p-5 shadow-sm">
+      <h3 className="text-xl font-semibold text-slate-800">{item.title}</h3>
+
+      {item.paragraphs?.map((paragraph) => (
+        <p key={paragraph} className="mt-2 text-base leading-relaxed text-slate-600">
+          {paragraph}
+        </p>
+      ))}
+
+      {item.subsections?.map((subsection) => (
+        <div key={subsection.title} className="mt-4">
+          {subsection.title && (
+            <h4 className="text-lg font-semibold text-slate-800">{subsection.title}</h4>
+          )}
+          {subsection.paragraphs?.map((paragraph) => (
+            <p key={paragraph} className="mt-2 text-base leading-relaxed text-slate-600">
+              {paragraph}
+            </p>
+          ))}
+          <NumberedList items={subsection.list} />
+        </div>
+      ))}
+
+      <NumberedList items={item.list} />
+      <SumberBlock sumber={item.sumber} />
+    </article>
+  );
+}
+
+function ImageBlock({ title, src }) {
   if (src) {
     return (
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
@@ -105,15 +173,13 @@ function ImageBlock({ title, src, images = [] }) {
 }
 
 export default function MateriPage() {
-  const materi = materiStatis;
-
   const grouped = useMemo(() => {
     const map = {};
-    materi.forEach((item) => {
+    materiStatis.forEach((item) => {
       map[item.kategori] = [...(map[item.kategori] || []), item];
     });
     return map;
-  }, [materi]);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -127,14 +193,16 @@ export default function MateriPage() {
         </p>
       </section>
 
-      {Object.entries(grouped).map(([kategori, items], index) => {
+      {materiSectionOrder.map((kategori, index) => {
+        const items = grouped[kategori];
+        if (!items?.length) return null;
+
         const config = kategoriConfig[kategori] || {
           label: kategori.replaceAll('_', ' '),
           icon: Stethoscope,
           accent: 'bg-slate-50 text-slate-700',
           placeholder: 'Placeholder Gambar Materi',
           image: '',
-          images: [],
         };
         const SectionIcon = config.icon;
         const isEven = index % 2 === 0;
@@ -149,14 +217,11 @@ export default function MateriPage() {
             <div className="grid gap-4 p-5 md:grid-cols-2 md:items-center">
               <div className={`space-y-3 ${isEven ? 'md:order-1' : 'md:order-2'}`}>
                 {items.map((item, idx) => (
-                  <article key={`${item.title}-${idx}`} className="rounded-2xl bg-white p-5 shadow-sm">
-                    <h3 className="text-xl font-semibold text-slate-800">{item.title}</h3>
-                    <p className="mt-2 text-base leading-relaxed text-slate-600">{item.content}</p>
-                  </article>
+                  <MateriArticle key={`${item.title}-${idx}`} item={item} />
                 ))}
               </div>
               <div className={isEven ? 'md:order-2' : 'md:order-1'}>
-                <ImageBlock title={config.placeholder} src={config.image} images={config.images} />
+                <ImageBlock title={config.placeholder} src={config.image} />
               </div>
             </div>
           </section>
